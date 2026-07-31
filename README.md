@@ -1,4 +1,4 @@
-\# View Online
+# View Online
 
-\[MacroQuest \& E3 Reference](https://klutch.github.io/mq-e3-reference)
+[MacroQuest \& E3 Reference](https://klutch.github.io/mq-e3-reference)
 
