@@ -196,7 +196,7 @@ td.ex a:hover,td.desc a:hover,.note a:hover,.lede a:hover{color:var(--r4);border
 
 <div class="searchbar">
   <input id="q" type="search" placeholder="Filter every command and setting…  try:  loot   burn   healpct   manastone   cure   aggro" autocomplete="off">
-  <div class="hint"><span id="count">—</span> rows shown · press <b>Esc</b> to clear · <b>/</b> to focus</div>
+  <div class="hint"><span id="count">—</span> matches shown · press <b>Esc</b> to clear · <b>/</b> to focus</div>
 </div>
 
 <nav class="toc">
@@ -765,6 +765,13 @@ td.ex a:hover,td.desc a:hover,.note a:hover,.lede a:hover{color:var(--r4);border
 <tr><td class="cmd">/maketemplate</td><td class="desc">MQ2KissTemplate — generates a starter template for a new KISS-style macro.</td><td class="ex">/maketemplate</td></tr>
 <tr><td class="cmd">/gmcheck</td><td class="desc">Already listed under safety — repeated here because it is also a plain on/off utility toggle.</td><td class="ex">/gmcheck on</td></tr>
 </tbody></table></div>
+
+<div class="note warn"><b>MQ2Events, in practice.</b> Triggers live in <code>config\MQ2Events_&lt;CharName&gt;.ini</code> (or a shared <code>MQ2Events.ini</code>), one <code>[section]</code> per event with exactly two keys, <code>trigger</code> and <code>command</code>. Matching is <b>Lax/Blech 1.7.4</b>: <code>#*#</code> is a wildcard, <code>#1#</code>–<code>#9#</code> capture into <code>${EventArg1..9}</code>, everything else matches literally and case-insensitively, and the pattern must match the whole line — which is why triggers are wrapped in <code>#*#</code> at both ends. Four things that cost real debugging time on this install:<br>
+• The plugin hooks <b>OnIncomingChat only</b>, meaning chat received from the server. <code>/echo</code> and EQBC <code>/bc</code> output are written by MacroQuest rather than received, so neither can ever fire a trigger — testing a pattern with <code>/echo</code> proves nothing.<br>
+• <code>/event off</code> is <b>global</b>, not per-event. A command containing <code>/event off … /docommand /timed 10 /event on</code> disables every trigger for that window, and if the toon zones or dies before the timed restore comes due, the queued command is dropped and events stay off silently.<br>
+• <code>/event load</code> re-reads the INI and <code>/event list</code> will then show the new event — but appearing in that list is not proof it was registered with the matcher. If <code>/eventdebug</code> shows the line being fed and nothing matches, restart the client so the section is picked up during plugin init.<br>
+• <code>/plugin MQ2Events unload</code> <b>crashed eqgame.exe</b> on this build. To take it out of service, set <code>MQ2Events=0</code> in <code>config\MacroQuest.ini</code> and restart instead.<br>
+Because the INI is read through the Win32 <code>GetPrivateProfileString</code> API, the file must be ANSI or UTF-8 <i>without</i> a BOM and use CRLF line endings; an editor that saves UTF-16 or bare LF produces a file that parses as empty, with no error. Where E3 is already running, <code>[EventRegMatches]</code> in the character INI does the same job with .NET regex and none of the above — see <a href="#cfg-events">§3.9</a>.</div>
 </section>
 
 <hr class="div">
@@ -1745,6 +1752,10 @@ td.ex a:hover,td.desc a:hover,.note a:hover,.lede a:hover{color:var(--r4);border
 <div class="note"><b>Worked example from the tooltip.</b> Announce a Life Support click to your group:<br>
 <code>[Life Support]</code> → <code>Life Support=Divine Barrier/HealPct|20/Gem|7/AfterEvent|TellGroupIUsedDivineBarrier</code><br>
 <code>[Events]</code> → <code>TellGroupIUsedDivineBarrier=/g I just used Divine Barrier!</code></div>
+
+<div class="note warn"><b><code>/delay</code> does not work in an event or a command set.</b> <code>/delay</code> is a macro command — it pauses the execution block of a running <code>.mac</code>. E3 events, <code>[CommandSets]</code> and plugin-issued commands are not macros, so there is no block to pause and the command silently does nothing. MacroQuest prints an “isn't running” error for <code>/call</code>, <code>/goto</code>, <code>/return</code>, <code>/endmacro</code> and <code>/pause</code>, but has no such guard on <code>/delay</code>, which is why this failure is invisible rather than loud. <code>/multiline</code> compounds it by running every command in the same frame without ever yielding to the game loop. Use <code>/timed &lt;deciseconds&gt; &lt;command&gt;</code> instead — it is scheduled off MacroQuest's pulse and needs no macro. Its offsets are measured from the moment it is issued, so under <code>/multiline</code> they must be <b>cumulative</b>, not relative to the previous step:<br>
+<code>GroupInvis=/multiline ; /target Ogrim ; /timed 5 /cast 8 ; /timed 60 /target Yhgrim ; /timed 65 /cast 8</code><br>
+That reads: target now, cast at 0.5s, retarget at 6.0s, cast again at 6.5s. <code>/docommand</code> is not a substitute — it forces an extra parse pass so TLOs expand before execution, and adds no timing of any kind.</div>
 </section>
 
 <hr class="div">
@@ -1790,10 +1801,14 @@ td.ex a:hover,td.desc a:hover,.note a:hover,.lede a:hover{color:var(--r4);border
 <tr><td class="cmd">/MinHPTotal|N</td><td class="desc">Minimum <b>absolute</b> HP you must have. Mainly for shaman canni.</td><td class="ex">an HP number</td></tr>
 <tr><td class="cmd">/HealPct|N</td><td class="desc">Start the heal at or below this target HP percent.</td><td class="ex">0–100</td></tr>
 <tr><td class="cmd">/HealthMax|N</td><td class="desc">“Cancel Heal Above %” — abort the cast if the target climbs back above this percent mid-cast.</td><td class="ex">0–100</td></tr>
-<tr><td class="cmd">/PctAggro|N</td><td class="desc">Skip the entry whenever your aggro percent is above this cap.</td><td class="ex">0–100</td></tr>
+<tr><td class="cmd">/PctAggro|N</td><td class="desc">Legacy flag — only honored on <b>[Nukes]</b> and <b>[Stuns]</b> entries (skip when aggro percent is above N); ignored on debuffs/DoTs/heals, and on melee abilities it acts as a <i>minimum</i> instead. Prefer <code>/MaxAggro|N</code>, which works on every entry type.</td><td class="ex">0–100</td></tr>
 <tr><td class="cmd">/MinAggro|N</td><td class="desc">Only cast once your aggro percent is at least this value.</td><td class="ex">0–100</td></tr>
 <tr><td class="cmd">/MaxAggro|N</td><td class="desc">Hold off once your aggro percent meets or exceeds this limit.</td><td class="ex">0–100</td></tr>
 </tbody></table></div>
+
+<div class="note warn"><b><code>/HealPct|</code> reads the <i>target's</i> health, not yours.</b> On a heal the target is your ally, which is what the modifier is for. Put it on a <code>[Nukes]</code>, <code>[DoTs]</code> or other offensive entry and the target is the mob, so <code>/HealPct|80</code> means “fire whenever <i>the mob</i> is below 80%” — that is, almost continuously. It is not ignored on offensive entries, it is actively wrong, and the symptom is a spell that casts <i>constantly</i> rather than one that never casts. <code>/MinHP|N</code> is the only modifier here that reads <i>your</i> health, and it is a floor — “only when I am at or above N” — so it cannot express “use this when I am hurt” either. For a lifetap or an emergency clicky that should fire below a threshold, gate it with an <code>[Ifs]</code> entry:<br>
+<code>[Ifs]</code> → <code>HPBelow80=(${Me.PctHPs} &lt; 80)</code><br>
+<code>[Nukes]</code> → <code>Main=Drain Soul/Gem|1/Ifs|HPBelow80</code></div>
 
 <h3 id="cfg-mod-timing">Timing &amp; delays</h3>
 <div class="tblwrap"><table>
@@ -1997,6 +2012,8 @@ td.ex a:hover,td.desc a:hover,.note a:hover,.lede a:hover{color:var(--r4);border
 </tbody></table></div>
 
 <div class="note warn"><b>Mind the spelling.</b> E3's own shipped defaults are inconsistent about capitalisation — this install's <code>Advanced Settings.ini</code> contains both <code>check_Stuns</code> and <code>Check_Stuns</code>, and both <code>check_AE</code> and <code>check_Ae</code>. Since both forms ship and evidently work, the lookup appears to tolerate case; even so, the safe move is to copy the spelling from an existing line in your own file rather than typing one from memory.</div>
+
+<div class="note warn"><b>A section is dead config if its routine is missing from your class's list.</b> The lists above are not merely a priority order — a routine that is absent never runs at all, and the INI section behind it fails silently no matter what you put in it. On this install <code>[SHD Functions]</code> ships without <code>check_AE</code>, so a Shadowknight's <code>[PBAE]</code> entries are never evaluated, whether or not <code>/pbaeon</code> is set; <code>check_lifeTap</code> is likewise absent from the shipped list even though E3's own built-in defaults name it for both SHD and NEC. Before debugging why an entry will not fire, confirm its routine appears in your class's section — that is a faster answer than any modifier. Where a routine is missing and you would rather not edit the order, an equivalent entry in a section whose routine <i>does</i> run will get you there: a Shadowknight lifetap works from <code>[Nukes]</code> (<code>check_Nukes</code>) or <code>[Life Support]</code>, which is evaluated ahead of everything else.</div>
 </section>
 
 <hr class="div">
@@ -2121,48 +2138,63 @@ Generated 2026-07-31 from a local E3Next + MacroQuest installation · E3Next com
 
 /* ---------- filter ---------- */
 (function(){
-  var q=document.getElementById('q'), rows=[].slice.call(document.querySelectorAll('tbody tr')),
-      cnt=document.getElementById('count'), secs=[].slice.call(document.querySelectorAll('section')),
+  var q=document.getElementById('q'),
+      cnt=document.getElementById('count'),
+      secs=[].slice.call(document.querySelectorAll('section')),
       parts=[].slice.call(document.querySelectorAll('.part')),
-      hrs=[].slice.call(document.querySelectorAll('hr.div')),
-      tbls=[].slice.call(document.querySelectorAll('.tblwrap'));
+      hrs=[].slice.call(document.querySelectorAll('hr.div'));
 
   var nores=document.createElement('div');
   nores.className='nores';
   nores.textContent='nothing matches that.';
   document.querySelector('footer').parentNode.insertBefore(nores,document.querySelector('footer'));
 
-  // remember each table's preceding h3 so headings hide with their table
-  var blocks=tbls.map(function(t){
-    var h=t.previousElementSibling;
-    while(h && h.tagName!=='H3' && h.tagName!=='H2' && h.tagName!=='SECTION'){
-      h=(h.tagName==='DIV'||h.tagName==='P')?h.previousElementSibling:null;
-    }
-    return {tbl:t, head:(h && h.tagName==='H3')?h:null};
+  /* Index EVERY block inside a section, not just table rows — the lede
+     paragraphs and note boxes carry the caveats and worked examples, and
+     used to be both unsearchable and hidden the moment you typed anything.
+     Blocks are grouped under the nearest preceding h3 so a heading survives
+     whenever anything beneath it matches, table or prose. */
+  var model=secs.map(function(sec){
+    var groups=[], cur={head:null,units:[]};
+    groups.push(cur);
+    [].slice.call(sec.children).forEach(function(el){
+      if(el.tagName==='H3'){ cur={head:el,units:[]}; groups.push(cur); return; }
+      if(el.tagName==='H2') return;                 // section title tracks the section
+      if(el.classList.contains('tblwrap')){
+        cur.units.push({el:el, rows:[].slice.call(el.querySelectorAll('tbody tr'))});
+      }else{
+        cur.units.push({el:el, rows:null, text:el.textContent.toLowerCase()});
+      }
+    });
+    return {sec:sec, groups:groups};
   });
 
   function apply(){
     var v=q.value.trim().toLowerCase(), n=0;
-    rows.forEach(function(r){
-      var hit = !v || r.textContent.toLowerCase().indexOf(v)>-1;
-      r.style.display = hit?'':'none'; if(hit)n++;
-    });
-    var headVis=[];
-    blocks.forEach(function(b){
-      var vis=[].slice.call(b.tbl.querySelectorAll('tbody tr')).some(function(r){return r.style.display!=='none'});
-      b.tbl.style.display=(!v||vis)?'':'none';
-      if(b.head){
-        var i=headVis.indexOf(b.head);
-        if(i<0){ headVis.push(b.head); headVis.push(vis); }
-        else headVis[i+1]=headVis[i+1]||vis;
-      }
-    });
-    for(var i=0;i<headVis.length;i+=2){
-      headVis[i].style.display=(!v||headVis[i+1])?'':'none';
-    }
-    secs.forEach(function(s){
-      var vis=[].slice.call(s.querySelectorAll('tbody tr')).some(function(r){return r.style.display!=='none'});
-      s.style.display = (!v||vis)?'':'none';
+    model.forEach(function(s){
+      var secHit=false;
+      s.groups.forEach(function(g){
+        var gHit=false;
+        g.units.forEach(function(u){
+          if(u.rows){
+            var any=false;
+            u.rows.forEach(function(r){
+              var hit=!v||r.textContent.toLowerCase().indexOf(v)>-1;
+              r.style.display=hit?'':'none';
+              if(hit){ n++; any=true; }
+            });
+            u.el.style.display=(!v||any)?'':'none';
+            if(any) gHit=true;
+          }else{
+            var hit=!v||u.text.indexOf(v)>-1;
+            u.el.style.display=hit?'':'none';
+            if(hit){ n++; gHit=true; }
+          }
+        });
+        if(g.head) g.head.style.display=(!v||gHit)?'':'none';
+        if(gHit) secHit=true;
+      });
+      s.sec.style.display=(!v||secHit)?'':'none';
     });
     parts.forEach(function(p){
       var any=false, e=p.nextElementSibling;
