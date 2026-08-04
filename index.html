@@ -183,7 +183,7 @@ td.ex a:hover,td.desc a:hover,.note a:hover,.lede a:hover{color:var(--r4);border
 
 <header>
   <h1><span class="rb-text">MacroQuest &amp; E3Next</span><br>Complete Command &amp; Settings Reference</h1>
-  <p class="sub">Every <code>/command</code> found in this installation — harvested from documentation, settings files, the MacroQuest core, 105 plugin DLLs, the E3Next .NET assembly, Lua scripts and macros — plus <b>every setting reachable from <code>/e3config</code></b>.</p>
+  <p class="sub">Every <code>/command</code> found in this installation — harvested from documentation, settings files, the MacroQuest core (<code>MQ2Main.dll</code>: MacroQuest itself, the module injected into <code>eqgame.exe</code> that everything else loads into — see <a href="#core">§1.1</a>), 105 plugin DLLs, the E3Next .NET assembly, Lua scripts and macros — plus <b>every setting reachable from <code>/e3config</code></b>.</p>
   <div class="badges">
     <span class="badge"><b>640</b> commands</span>
     <span class="badge"><b>435</b> settings &amp; controls</span>
@@ -256,7 +256,7 @@ td.ex a:hover,td.desc a:hover,.note a:hover,.lede a:hover{color:var(--r4);border
 </div>
 <section id="core">
 <h2><span class="num">1.1</span><span class="rb-text">MacroQuest Core</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— <code>MQ2Main.dll</code></small></h2>
-<p class="lede">The commands MacroQuest itself provides, available with no plugins loaded at all. Several replace or extend an EverQuest client command of the same name.</p>
+<p class="lede">The commands MacroQuest itself provides, available with no plugins loaded at all. <code>MQ2Main.dll</code> <i>is</i> MacroQuest — the module injected into <code>eqgame.exe</code> that supplies the command parser, the <code>${…}</code> data and TLO system, the macro language, the chat-event and detour engine, and the plugin host that every DLL in <code>plugins\</code> loads into. That makes this section the floor of the whole reference: nothing here depends on anything else being installed, whereas everything from <a href="#net">§1.3</a> onward is a plugin layered on top and disappears if that plugin is not loaded. Several of these commands deliberately shadow an EverQuest command of the same name with an enhanced version — <code>/target</code>, <code>/who</code>, <code>/camp</code> and <code>/assist</code> among them — which is why <code>/eqtarget</code> exists to reach the client's original. The core's macro-only commands, which do nothing unless a <code>.mac</code> is running, are split out into <a href="#macro">§1.2</a>.</p>
 
 <h3>Session, plugins &amp; diagnostics</h3>
 <div class="tblwrap"><table>
