@@ -884,6 +884,41 @@ Because the INI is read through the Win32 <code>GetPrivateProfileString</code> A
 <tr><td class="cmd">/e3ListExposedData</td><td class="desc">Lists the E3 variables published to the network — <code>${Assisting}</code>, <code>${InCombat}</code>, <code>${AssistTarget}</code>, burn flags, <code>${IsSafeZone}</code> and friends.</td><td class="ex">/e3ListExposedData</td></tr>
 </tbody></table></div>
 
+<h3 id="e3-bc-filters">Command filter tokens <small>narrow who acts on a broadcast</small></h3>
+<p class="lede">The first-argument target filter decides <i>which toons receive</i> a command. These four tokens are the second stage: each receiving toon evaluates them against itself and decides whether to run the command at all. Append them anywhere on the line — E3 strips them out while parsing, so they never reach the command's own arguments.</p>
+<div class="tblwrap"><table>
+<thead><tr><th>Token</th><th>What it does</th><th>Example</th></tr></thead>
+<tbody>
+<tr><td class="cmd">/only|<i>list</i></td><td class="desc"><b>Allow-list — default deny.</b> Only toons matching the list run the command; every other recipient silently ignores it.</td><td class="ex">/e3bcaa //quickburns /only|Tanks</td></tr>
+<tr><td class="cmd">/not|<i>list</i></td><td class="desc"><b>Deny-list — default allow.</b> Toons matching the list ignore the command; everyone else runs it. The inverse of <code>/only|</code>.</td><td class="ex">/e3bcaa //makemevisible /not|Ogrim</td></tr>
+<tr><td class="cmd">/include|<i>list</i></td><td class="desc">A second allow-list evaluated after <code>/only|</code> or <code>/not|</code> has been applied — use it to widen a filter without rewriting the first list.</td><td class="ex">/e3bc //looton /only|Tanks /include|Yhgrim</td></tr>
+<tr><td class="cmd">/exclude|<i>list</i></td><td class="desc">A second deny-list evaluated at the same stage — carves named toons or classes back out of whatever the first token let through.</td><td class="ex">/e3bc //followme /only|Melee /exclude|BRD</td></tr>
+</tbody></table></div>
+
+<div class="note"><b>What goes in the list.</b> Entries are separated by <b>spaces</b>, not commas, and every comparison is case-insensitive. Each entry may be a <b>character name</b>, a <b>class short code</b>, or one of the <b>group keywords</b> below, and you can mix all three in one list. E3's own help text for <code>/e3restock</code> shows the single-value shape: <code>/e3restock emerald 500 /only|Healers</code>.</div>
+
+<div class="note warn"><b>A list of more than one entry must be quoted.</b> E3 tokenises the command line on spaces before any of this runs — quote-aware, but spaces still split. So <code>/only|Ogrim Yhgrim</code> does <i>not</i> filter to two toons: the line breaks into <code>/only|Ogrim</code> and a stray <code>Yhgrim</code>, the filter sees one name, and the leftover word is handed to the command as an ordinary argument, which may well corrupt it. Wrap the whole list instead, so it survives as a single token and the filter's own space-split can do its job:<br>
+<code>/e3bcaa //quickburns /only|"Ogrim Yhgrim"</code> &nbsp;·&nbsp; <code>/e3bc //looton /not|"SHD WAR"</code> &nbsp;·&nbsp; <code>/e3bc //followme /only|"Melee Tanks"</code><br>
+A single-entry list needs no quotes — <code>/only|Healers</code> is fine as written.</div>
+
+<div class="tblwrap"><table>
+<thead><tr><th>Group keyword</th><th>Classes it covers</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td class="cmd">Tanks</td><td class="desc">WAR · PAL · SHD</td><td class="ex">the plate tanks only — no BRD</td></tr>
+<tr><td class="cmd">Healers</td><td class="desc">CLR · DRU · SHM</td><td class="ex">the three priest classes</td></tr>
+<tr><td class="cmd">Melee</td><td class="desc">RNG · MNK · BRD · ROG · BST · BER</td><td class="ex">excludes the plate tanks, which are covered by <code>Tanks</code></td></tr>
+<tr><td class="cmd">Casters</td><td class="desc">NEC · WIZ · MAG · ENC</td><td class="ex">pure INT casters</td></tr>
+<tr><td class="cmd">Ranged</td><td class="desc">RNG · NEC · WIZ · MAG · ENC</td><td class="ex"><code>Casters</code> plus the ranger — anything that fights at distance</td></tr>
+<tr><td class="cmd">Silk</td><td class="desc">NEC · WIZ · MAG · ENC</td><td class="ex">an exact duplicate of <code>Casters</code>; the two are interchangeable</td></tr>
+<tr><td class="cmd">Plate</td><td class="desc">WAR · CLR · PAL · SHD · BRD</td><td class="ex">armour class, so the bard lands here</td></tr>
+<tr><td class="cmd">Chain</td><td class="desc">RNG · ROG · SHM · BER</td><td class="ex">armour class</td></tr>
+<tr><td class="cmd">Leather</td><td class="desc">DRU · MNK · BST</td><td class="ex">armour class</td></tr>
+</tbody></table></div>
+
+<div class="note warn"><b>How the tokens combine, and the one that surprises people.</b> <code>/only|</code> and <code>/not|</code> are mutually exclusive: if both appear, <code>/only|</code> wins outright and the <code>/not|</code> is never read. Repeating a token does not merge the lists either — the <b>last</b> occurrence of each token on the line is the one used, so <code>/only|Tanks /only|Healers</code> filters to healers alone. <code>/include|</code> and <code>/exclude|</code> are evaluated after whichever of the two ran, which is what lets you write <code>/only|Melee /exclude|BRD</code>. All four are matched on the token name alone, so the pipe is required: <code>/only Ogrim</code> with a space is not recognised as a filter and will be passed through to the command as an ordinary argument.</div>
+
+<div class="note"><b>Which commands honour them.</b> The filter list is parsed off <i>every</i> E3 command as it is received, so appending a token is always safe. Acting on it is up to the individual handler, and not all of them check — the broadcast family (<code>/e3bc</code> and its suffixed variants), burn requests and <code>/e3restock</code> demonstrably do. If a token appears to be ignored, that handler simply does not consult the filter list; the token is still stripped, so nothing is corrupted. Verify against your own build with <code>/e3listcommands</code>.</div>
+
 <h3>Chat, barking &amp; reporting</h3>
 <div class="tblwrap"><table>
 <thead><tr><th>Command</th><th>What it does</th><th>Example</th></tr></thead>
