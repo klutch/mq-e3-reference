@@ -1188,17 +1188,28 @@ A single-entry list needs no quotes — <code>/only|Healers</code> is fine as wr
 <tr><td class="cmd">/e3autojointasks</td><td class="desc">Toggles Auto Join Tasks so bots accept task/mission invites automatically.</td><td class="ex">/e3autojointasks on</td></tr>
 </tbody></table></div>
 
-<h3>E3 variables</h3>
+<h3 id="e3-vars">E3 variables</h3>
+<p class="lede">E3 keeps its own named string variables — your custom flags. They are <b>per-character and in memory only</b>: not shared across the bot network, and not written to disk. Use <code>/e3bcaa //e3varset …</code> to set the same one everywhere, and re-set them after a client restart or <code>/e3reload</code>. Their whole point is <a href="#cfg-events">§3.9</a>: inside any <code>[Ifs]</code> expression, <code>${YourVarName}</code> is text-replaced with the stored value before MacroQuest ever sees the line.</p>
 <div class="tblwrap"><table>
 <thead><tr><th>Command</th><th>What it does</th><th>Example</th></tr></thead>
 <tbody>
-<tr><td class="cmd">/e3varset</td><td class="desc">Sets an E3 variable that persists across your bot network.</td><td class="ex">/e3varset pulling 1</td></tr>
-<tr><td class="cmd">/e3varvalue</td><td class="desc">Reads a variable into <code>E3N_var</code> (returns NULL when unset).</td><td class="ex">/e3varvalue pulling</td></tr>
-<tr><td class="cmd">/e3varbool</td><td class="desc">Evaluates a variable as a boolean.</td><td class="ex">/e3varbool pulling</td></tr>
-<tr><td class="cmd">/e3varcalc</td><td class="desc">Sets a variable from a math expression via <code>${Math.Calc[]}</code>.</td><td class="ex">/e3varcalc count 3+4</td></tr>
+<tr><td class="cmd">/e3varset</td><td class="desc">Stores a raw string under a name. Overwrites silently if the name already exists.</td><td class="ex">/e3varset pulling 1</td></tr>
+<tr><td class="cmd">/e3varbool</td><td class="desc">The on/off switch. With a value it stores <code>True</code>/<code>False</code>; <b>with no value it flips the current one</b>, and creates it as <code>True</code> if it did not exist. The value is run through the same Ifs evaluator, so it can be an expression rather than a literal.</td><td class="ex">/e3varbool pulling<br>/e3varbool pulling False</td></tr>
+<tr><td class="cmd">/e3varcalc</td><td class="desc">Sets a variable from a math expression via <code>${Math.Calc[]}</code>. Always stores a number.</td><td class="ex">/e3varcalc count 3+4</td></tr>
+<tr><td class="cmd">/e3varvalue</td><td class="desc">Runs <code>/varset E3N_var &lt;value&gt;</code>, or <code>NULL</code> when unset. <code>/varset</code> is a macro command, so this is only useful from a running <code>.mac</code> — from an Ifs, use <code>${name}</code> instead.</td><td class="ex">/e3varvalue pulling</td></tr>
 <tr><td class="cmd">/e3varlist</td><td class="desc">Lists all set variables and their values ("No vars set." when empty).</td><td class="ex">/e3varlist</td></tr>
 <tr><td class="cmd">/e3varclear</td><td class="desc">Clears one variable, or <code>all</code> of them.</td><td class="ex">/e3varclear all</td></tr>
 </tbody></table></div>
+
+<div class="note"><b>Recipe · a manual "stop casting" flag.</b> For an encounter where the mob is immune to everything you throw at it, gate every offensive line behind one switch.<br>
+1. In <code>GlobalIfs.ini</code> (<a href="#cfg-globalifs">§3.9</a>): <code>CanCast=!${Bool[${NoCasting}]}</code><br>
+2. On every nuke, debuff and DoT line: <code>/Ifs|CanCast</code> — or <code>/Ifs|SafeToNuke,CanCast</code> where a condition already exists.<br>
+3. In <code>[Startup Commands]</code> on each bot: <code>Command=/e3varbool NoCasting False</code><br>
+4. In game: <code>/e3bcaa //e3varbool NoCasting True</code> to stop, <code>False</code> to resume.<br>
+Step 3 is not optional. Because substitution is plain text, an <b>unset</b> variable leaves the literal <code>${NoCasting}</code> in the expression; MacroQuest cannot resolve it, <code>${Bool[]}</code> reads that leftover text as true, and the toon stops casting. Check any toon with <code>/e3varlist</code> or <code>/e3echobool ${CanCast}</code>.</div>
+
+<div class="note"><b>Variables inside variables.</b> <code>/e3varset</code>, <code>/e3varbool</code> and <code>/e3varcalc</code> expand <code>(othervar)</code> — round brackets, not <code>${…}</code> — in the value before storing it. That expansion happens once, at set time, so the stored result is a snapshot rather than a live link.<br>
+<code>/e3varcalc total (count)+1</code></div>
 
 <h3>Configuration, UI &amp; lifecycle</h3>
 <div class="tblwrap"><table>
@@ -1770,7 +1781,7 @@ A single-entry list needs no quotes — <code>/only|Healers</code> is fine as wr
 <div class="tblwrap"><table>
 <thead><tr><th>Section</th><th>What it does</th><th>Example</th></tr></thead>
 <tbody>
-<tr><td class="cmd">[Ifs]</td><td class="desc">Named MacroQuest boolean expressions. Reference one from any spell entry with <code>/Ifs|Name</code>, and that entry cannot fire unless the expression is true. Comma-separate several to require all of them. The Tools pane ships ~40 samples you can import.</td><td class="ex">SafeToNuke=(${Me.PctAggro} &lt; 90)<br>NotInDisc=!(${Bool[${Me.ActiveDisc.ID}]})<br>NeedMana=${Me.PctMana} &lt; 60</td></tr>
+<tr><td class="cmd">[Ifs]</td><td class="desc">Named MacroQuest boolean expressions. Reference one from any spell entry with <code>/Ifs|Name</code>, and that entry cannot fire unless the expression is true. Comma-separate several to require all of them — they are joined with <code>&amp;&amp;</code>. Names not found here fall through to the shared <code>GlobalIfs.ini</code> (see below). The Tools pane ships ~40 samples you can import.</td><td class="ex">SafeToNuke=(${Me.PctAggro} &lt; 90)<br>NotInDisc=!(${Bool[${Me.ActiveDisc.ID}]})<br>NeedMana=${Me.PctMana} &lt; 60</td></tr>
 <tr><td class="cmd">[Events]</td><td class="desc">Arbitrary commands your bot can perform, each under a name you choose. Nothing runs on its own — an event fires when a spell's <code>/BeforeEvent|</code> or <code>/AfterEvent|</code> names it, or when an <code>[EventLoop]</code> line evaluates true.</td><td class="ex">TellGroupIUsedDivineBarrier=/g I just used Divine Barrier!</td></tr>
 <tr><td class="cmd">[EventLoop]</td><td class="desc">Conditions that trigger events. Every line is evaluated roughly once per second; when one turns true its matching <code>[Events]</code> command runs. Left side is the event name, right side is the condition.</td><td class="ex">DropInvisCombat=(${Me.CombatState.Equal[Combat]} &amp;&amp; ${Me.Invis})</td></tr>
 <tr><td class="cmd">[EventLoopTiming]</td><td class="desc">Per-entry override of that once-a-second cadence, for conditions that are expensive to evaluate or need to fire faster.</td><td class="ex">EventName=5000</td></tr>
@@ -1784,6 +1795,21 @@ A single-entry list needs no quotes — <code>/only|Healers</code> is fine as wr
 <tr><td class="cmd">[E3BotsPublishData (key/value)]</td><td class="desc">Arbitrary key/value pairs published across your bot network, readable from other toons through E3's data TLOs. Use it to share state your own Ifs can then test.</td><td class="ex">PullStatus=idle</td></tr>
 <tr><td class="cmd">[&lt;name&gt; Melody]</td><td class="desc">Bard only. Each melody is its own section of ordered <code>Song=</code> entries with gem assignments, optionally gated by an <code>/Ifs|</code>. The Melody Helper in the Tools pane writes these for you, including the matching <code>[Ifs]</code> entry.</td><td class="ex">[main Melody]<br>Song=Cantata of Life/gem|1</td></tr>
 </tbody></table></div>
+
+<h3 id="cfg-globalifs">GlobalIfs.ini — one <code>[Ifs]</code> section for every character</h3>
+<p class="lede">Conditionals do not have to live in each character's INI. E3 also reads <code>config\e3 Macro Inis\GlobalIfs.ini</code>, a file with a single <code>[Ifs]</code> section whose names every toon can use. The config window does not expose it — edit it by hand.</p>
+
+<div class="tblwrap"><table>
+<thead><tr><th>Detail</th><th>What to know</th><th>Example</th></tr></thead>
+<tbody>
+<tr><td class="cmd">Location</td><td class="desc">Alongside the other shared macro settings, <b>not</b> in <code>e3 Bot Inis</code>. Created empty on first run if missing.</td><td class="ex">config\e3 Macro Inis\GlobalIfs.ini</td></tr>
+<tr><td class="cmd">Lookup order</td><td class="desc">For each name in a <code>/Ifs|</code> list, E3 checks that character's own <code>[Ifs]</code> section first and only falls back to the global file. A local name of the same spelling therefore wins — which is how you give one toon an exception to a shared rule.</td><td class="ex">character INI → GlobalIfs.ini</td></tr>
+<tr><td class="cmd">Reloading</td><td class="desc">E3 watches the file's timestamp and reloads it on its own. Saving the file is enough; no <code>/e3reload</code>.</td><td class="ex">—</td></tr>
+<tr><td class="cmd">Command sets</td><td class="desc">If you run named command sets, the file name picks up the same suffix, so each set can carry its own global conditionals.</td><td class="ex">GlobalIfs_&lt;setname&gt;.ini</td></tr>
+<tr><td class="cmd">Bard melodies</td><td class="desc">Melody <code>/Ifs|</code> entries use the same fallback, so a melody condition works from the global file too.</td><td class="ex">Song=Cantata of Life/gem|1/Ifs|SharedCheck</td></tr>
+</tbody></table></div>
+
+<div class="note"><b>Ifs are text substitution, not evaluation.</b> Before MacroQuest parses anything, E3 walks the expression three times: first replacing <code>${Name}</code> for every <a href="#e3-vars">E3 variable</a>, then for every <code>[Ifs]</code> key (character INI, then <code>GlobalIfs.ini</code>), then over the variables once more so an Ifs that dragged in another Ifs still resolves. Only the finished string is handed to MacroQuest as <code>${If[…,TRUE,FALSE]}</code>. Two consequences: an <code>[Ifs]</code> entry can freely reference another one by name, and any name that never matched is left in place as literal text for MacroQuest to choke on. Use <code>/e3echobool ${YourIfName}</code> to see what a condition actually evaluates to — plain <code>/echo</code> cannot see E3's own names.</div>
 
 <div class="note"><b>Worked example from the tooltip.</b> Announce a Life Support click to your group:<br>
 <code>[Life Support]</code> → <code>Life Support=Divine Barrier/HealPct|20/Gem|7/AfterEvent|TellGroupIUsedDivineBarrier</code><br>
@@ -1816,7 +1842,7 @@ That reads: target now, cast at 0.5s, retarget at 6.0s, cast again at 6.5s. <cod
 <div class="tblwrap"><table>
 <thead><tr><th>Modifier</th><th>What it does</th><th>Values</th></tr></thead>
 <tbody>
-<tr><td class="cmd">/Ifs|key,key</td><td class="desc">Comma-separated keys from your <code>[Ifs]</code> section. <b>Every</b> referenced conditional must evaluate true before the entry can fire.</td><td class="ex">/Ifs|SafeToNuke,NotInDisc</td></tr>
+<tr><td class="cmd">/Ifs|key,key</td><td class="desc">Comma-separated keys from your <code>[Ifs]</code> section, or from the shared <code>GlobalIfs.ini</code> when the character INI has no such name (<a href="#cfg-globalifs">§3.9</a>). <b>Every</b> referenced conditional must evaluate true before the entry can fire.</td><td class="ex">/Ifs|SafeToNuke,NotInDisc</td></tr>
 <tr><td class="cmd">/CheckFor|name,name</td><td class="desc">Spell names to check first. On a detrimental entry it looks at the mob's debuffs; on a buff or song it checks the target's buff list. If any of them is already present, the cast is skipped.</td><td class="ex">/CheckFor|Cantata of Life</td></tr>
 <tr><td class="cmd">/CastIf|name</td><td class="desc">The inverse — only cast when the target <b>already has</b> this exact buff or debuff.</td><td class="ex">/CastIf|Malosinete</td></tr>
 <tr><td class="cmd">/Zone|short,short</td><td class="desc">Comma-separated EQ short zone names in which the entry is allowed. Blank means everywhere.</td><td class="ex">/Zone|txevu,unrest</td></tr>
@@ -2124,6 +2150,7 @@ That reads: target now, cast at 0.5s, retarget at 6.0s, cast again at 6.5s. <cod
 <tr><td class="cmd">E3.dll IL, read as logic<br><small style="color:var(--tx3)">§2.2 filter tokens</small></td><td class="desc">Where a feature leaves no help string at all, the same <code>ikdasm</code> disassembly was read as <i>behaviour</i> rather than mined for literals: following the control flow of a method to establish what it actually decides. The <code>/only|</code> · <code>/not|</code> · <code>/include|</code> · <code>/exclude|</code> filters came out this way, from <code>GetCommandFilters</code>, <code>FilterMe</code>, <code>FilterReturnCheck</code> and <code>CommandMatch::set_args</code>, with the class-group keywords cross-checked against the <code>E3Core.Data.Class</code> enum. Anything documented this route is <b>as-implemented, not as-intended</b>, and unlike the command lists it has not been confirmed by running it in game — worth knowing before you trust an edge case.</td><td class="ex">4 undocumented tokens, 9 group keywords</td></tr>
 <tr><td class="cmd">Plugin DLLs</td><td class="desc">Extracted ASCII and UTF-16 string tables from all 105 plugins plus <code>MQ2Main.dll</code>, filtered for command-shaped tokens, then cross-checked each against the plugin's own usage and syntax strings.</td><td class="ex">~200 plugin commands with real usage text</td></tr>
 <tr><td class="cmd">Lua &amp; macros</td><td class="desc">Grepped <code>lua\</code> for <code>mq.bind</code> and <code>Macros\</code> for <code>#bind</code>.</td><td class="ex">18 Lua binds, 7 macro binds</td></tr>
+<tr><td class="cmd">E3Next C# source<br><small style="color:var(--tx3)">§2.x E3 variables, §3.9 GlobalIfs</small></td><td class="desc">E3.dll's embedded PDB paths point at the project it was built from, so where that checkout is present the original source can be read directly instead of the IL. The <code>/e3var*</code> commands and the Ifs resolver were taken from <code>Processors\Casting.cs</code>, the global conditionals file from <code>Settings\FeatureSettings\GlobalIfs.cs</code>, and the character-INI fallback order from <code>Data\Spell.cs</code> and <code>Data\MelodyIfs.cs</code>. This is the most reliable source in the table — real names, comments and control flow — but it only describes <b>your</b> build, and a stock binary install will not have it.</td><td class="ex">Substitution order, lookup fallback, per-character variable scope</td></tr>
 <tr><td class="cmd">/e3config settings<br><small style="color:var(--tx3)">Part III</small></td><td class="desc">E3.dll turned out to carry its own help: a <code>ConfigKeyDescriptionsForImGUI</code> table mapping <code>Section::Key</code> to the tooltip the config window shows, colour markup and worked examples included. That was extracted verbatim, then joined against the settings loaders (<code>CharacterSettings.cs</code>, <code>GeneralSettings.cs</code>, <code>AdvancedSettings.cs</code>) for the keys with no tooltip, the modifier parser for every <code>/Tag|Value</code>, and <code>CharacterSettingsWindow.cs</code> for the window's own controls. Defaults, clamps and validation warnings come from the loaders; example values were cross-checked against the INI files on this install.</td><td class="ex">435 settings, controls and modifiers</td></tr>
 </tbody></table></div>
 <div class="note warn"><b>Two caveats worth knowing.</b> First, string extraction cannot always distinguish a command a plugin <i>registers</i> from one it merely <i>issues</i> — where a plugin's strings showed only generic commands like <code>/stand</code> or <code>/autoinventory</code>, those were treated as issued, not registered, and left out. Second, binary noise in large DLLs produces occasional false command-shaped tokens; entries that were plainly junk have been dropped. For E3 specifically there is no ambiguity — the registrations were read from IL, not guessed. Run <code>/e3listcommands</code> in game to confirm against your exact build.</div>
