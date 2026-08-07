@@ -226,13 +226,12 @@ td.ex a:hover,td.desc a:hover,.note a:hover,.lede a:hover{color:var(--r4);border
   <a href="#cfg-buffs">3.4 Buffs</a>
   <a href="#cfg-offense">3.5 Nukes &amp; Burns</a>
   <a href="#cfg-heals">3.6 Heals &amp; Cures</a>
-  <a href="#cfg-cure-tank">3.7 Recipe · Cure the Tank</a>
-  <a href="#cfg-pets">3.8 Pets &amp; Manastone</a>
-  <a href="#cfg-events">3.9 Ifs &amp; Events</a>
-  <a href="#cfg-modifiers">3.10 Spell Modifiers</a>
-  <a href="#cfg-general">3.11 General Settings</a>
-  <a href="#cfg-advanced">3.12 Advanced Settings</a>
-  <a href="#cfg-ui">3.13 Theme &amp; HUD</a>
+  <a href="#cfg-pets">3.7 Pets &amp; Manastone</a>
+  <a href="#cfg-events">3.8 Ifs &amp; Events</a>
+  <a href="#cfg-modifiers">3.9 Spell Modifiers</a>
+  <a href="#cfg-general">3.10 General Settings</a>
+  <a href="#cfg-advanced">3.11 Advanced Settings</a>
+  <a href="#cfg-ui">3.12 Theme &amp; HUD</a>
   <div class="tocgroup">Appendix</div>
   <a href="#method">A · Sources &amp; Method</a>
 </nav>
@@ -770,7 +769,7 @@ td.ex a:hover,td.desc a:hover,.note a:hover,.lede a:hover{color:var(--r4);border
 • <code>/event off</code> is <b>global</b>, not per-event. A command containing <code>/event off … /docommand /timed 10 /event on</code> disables every trigger for that window, and if the toon zones or dies before the timed restore comes due, the queued command is dropped and events stay off silently.<br>
 • <code>/event load</code> re-reads the INI and <code>/event list</code> will then show the new event — but appearing in that list is not proof it was registered with the matcher. If <code>/eventdebug</code> shows the line being fed and nothing matches, restart the client so the section is picked up during plugin init.<br>
 • <code>/plugin MQ2Events unload</code> <b>crashed eqgame.exe</b> on this build. To take it out of service, set <code>MQ2Events=0</code> in <code>config\MacroQuest.ini</code> and restart instead.<br>
-Because the INI is read through the Win32 <code>GetPrivateProfileString</code> API, the file must be ANSI or UTF-8 <i>without</i> a BOM and use CRLF line endings; an editor that saves UTF-16 or bare LF produces a file that parses as empty, with no error. Where E3 is already running, <code>[EventRegMatches]</code> in the character INI does the same job with .NET regex and none of the above — see <a href="#cfg-events">§3.9</a>.</div>
+Because the INI is read through the Win32 <code>GetPrivateProfileString</code> API, the file must be ANSI or UTF-8 <i>without</i> a BOM and use CRLF line endings; an editor that saves UTF-16 or bare LF produces a file that parses as empty, with no error. Where E3 is already running, <code>[EventRegMatches]</code> in the character INI does the same job with .NET regex and none of the above — see <a href="#cfg-events">§3.8</a>.</div>
 </section>
 
 <hr class="div">
@@ -1189,7 +1188,7 @@ A single-entry list needs no quotes — <code>/only|Healers</code> is fine as wr
 </tbody></table></div>
 
 <h3 id="e3-vars">E3 variables</h3>
-<p class="lede">E3 keeps its own named string variables — your custom flags. They are <b>per-character and in memory only</b>: not shared across the bot network, and not written to disk. Use <code>/e3bcaa //e3varset …</code> to set the same one everywhere, and re-set them after a client restart or <code>/e3reload</code>. Their whole point is <a href="#cfg-events">§3.9</a>: inside any <code>[Ifs]</code> expression, <code>${YourVarName}</code> is text-replaced with the stored value before MacroQuest ever sees the line.</p>
+<p class="lede">E3 keeps its own named string variables — your custom flags. They are <b>per-character and in memory only</b>: not shared across the bot network, and not written to disk. Use <code>/e3bcaa //e3varset …</code> to set the same one everywhere, and re-set them after a client restart or <code>/e3reload</code>. Their whole point is <a href="#cfg-events">§3.8</a>: inside any <code>[Ifs]</code> expression, <code>${YourVarName}</code> is text-replaced with the stored value before MacroQuest ever sees the line.</p>
 <div class="tblwrap"><table>
 <thead><tr><th>Command</th><th>What it does</th><th>Example</th></tr></thead>
 <tbody>
@@ -1202,7 +1201,7 @@ A single-entry list needs no quotes — <code>/only|Healers</code> is fine as wr
 </tbody></table></div>
 
 <div class="note"><b>Recipe · a manual "stop casting" flag.</b> For an encounter where the mob is immune to everything you throw at it, gate every offensive line behind one switch.<br>
-1. In <code>GlobalIfs.ini</code> (<a href="#cfg-globalifs">§3.9</a>): <code>CanCast=!${Bool[${NoCasting}]}</code><br>
+1. In <code>GlobalIfs.ini</code> (<a href="#cfg-globalifs">§3.8</a>): <code>CanCast=!${Bool[${NoCasting}]}</code><br>
 2. On every nuke, debuff and DoT line: <code>/Ifs|CanCast</code> — or <code>/Ifs|SafeToNuke,CanCast</code> where a condition already exists.<br>
 3. In <code>[Startup Commands]</code> on each bot: <code>Command=/e3varbool NoCasting False</code><br>
 4. In game: <code>/e3bcaa //e3varbool NoCasting True</code> to stop, <code>False</code> to resume.<br>
@@ -1297,7 +1296,7 @@ Step 3 is not optional. Because substitution is plain text, an <b>unset</b> vari
 <tr><td class="cmd">Save Changes</td><td class="desc">Writes every pending edit to the selected INI. The button renders as <code>Save Changes*</code> while edits are outstanding.</td><td class="ex">“Unsaved changes” → “All changes saved”<br>“Saved changes to &lt;file&gt;”</td></tr>
 <tr><td class="cmd">Clear Changes</td><td class="desc">Throws away everything pending for the selected INI without touching the file on disk.</td><td class="ex">“Cleared pending changes for …”</td></tr>
 <tr><td class="cmd">Catalog Status / Load Catalogs</td><td class="desc">Loads the spell, disc, AA, skill and item catalogs that back every “Pick” button. Until they are loaded the pickers fall back to manual typing. Catalogs can be pulled locally or fetched from a connected peer.</td><td class="ex">Catalogs not loaded → Queued catalog load… → Loading catalogs… → Catalogs loaded.</td></tr>
-<tr><td class="cmd">Theme</td><td class="desc">Opens <b>UI Theme Selection</b> — five built-in themes plus a corner-rounding slider. Saved to the <code>[UI Theme]</code> section of your <code>_UI.ini</code>.</td><td class="ex">see <a href="#cfg-ui">§3.13</a></td></tr>
+<tr><td class="cmd">Theme</td><td class="desc">Opens <b>UI Theme Selection</b> — five built-in themes plus a corner-rounding slider. Saved to the <code>[UI Theme]</code> section of your <code>_UI.ini</code>.</td><td class="ex">see <a href="#cfg-ui">§3.12</a></td></tr>
 <tr><td class="cmd">Donate</td><td class="desc">Shows the author's PayPal link. The config editor is credited to <b>Linamas / Rekka</b>.</td><td class="ex">paypal.me/RekkaSoftware</td></tr>
 <tr><td class="cmd">Close</td><td class="desc">Hides the window. Identical to running <code>/e3config</code> again.</td><td class="ex">/e3config</td></tr>
 </tbody></table></div>
@@ -1316,14 +1315,14 @@ Step 3 is not optional. Because substitution is plain text, an <b>unset</b> vari
 <div class="tblwrap"><table>
 <thead><tr><th>Section</th><th>What the button adds</th><th>Documented in</th></tr></thead>
 <tbody>
-<tr><td class="cmd">[Ifs]</td><td class="desc">Add New Ifs — a named boolean MacroQuest expression you can then reference from any spell line with <code>/Ifs|Name</code>.</td><td class="ex"><a href="#cfg-events">§3.9</a></td></tr>
-<tr><td class="cmd">[CommandSets]</td><td class="desc">Add New Command Set — a named batch of slash commands fired as a unit.</td><td class="ex"><a href="#cfg-events">§3.9</a></td></tr>
+<tr><td class="cmd">[Ifs]</td><td class="desc">Add New Ifs — a named boolean MacroQuest expression you can then reference from any spell line with <code>/Ifs|Name</code>.</td><td class="ex"><a href="#cfg-events">§3.8</a></td></tr>
+<tr><td class="cmd">[CommandSets]</td><td class="desc">Add New Command Set — a named batch of slash commands fired as a unit.</td><td class="ex"><a href="#cfg-events">§3.8</a></td></tr>
 <tr><td class="cmd">[Burn]</td><td class="desc">Add New Burn — a custom burn bucket beyond the five built-ins, callable with <code>/e3burns "Name"</code>.</td><td class="ex"><a href="#cfg-offense">§3.5</a></td></tr>
-<tr><td class="cmd">[Events]</td><td class="desc">Add New Event — a named command executed when triggered.</td><td class="ex"><a href="#cfg-events">§3.9</a></td></tr>
-<tr><td class="cmd">[EventLoop]</td><td class="desc">Add New EventLoop — the condition that fires a named event, evaluated about once a second.</td><td class="ex"><a href="#cfg-events">§3.9</a></td></tr>
-<tr><td class="cmd">[EventLoopTiming]</td><td class="desc">Add New EventLoopTiming — overrides how often a given event loop entry is evaluated.</td><td class="ex"><a href="#cfg-events">§3.9</a></td></tr>
-<tr><td class="cmd">[EventRegMatches]</td><td class="desc">Add New EventRegMatche — a regular expression matched against incoming chat to trigger an event.</td><td class="ex"><a href="#cfg-events">§3.9</a></td></tr>
-<tr><td class="cmd">[E3BotsPublishData]</td><td class="desc">Add New Key Value — arbitrary key/value pairs published to your bot network and readable from other toons' <code>${E3N.…}</code> queries.</td><td class="ex"><a href="#cfg-events">§3.9</a></td></tr>
+<tr><td class="cmd">[Events]</td><td class="desc">Add New Event — a named command executed when triggered.</td><td class="ex"><a href="#cfg-events">§3.8</a></td></tr>
+<tr><td class="cmd">[EventLoop]</td><td class="desc">Add New EventLoop — the condition that fires a named event, evaluated about once a second.</td><td class="ex"><a href="#cfg-events">§3.8</a></td></tr>
+<tr><td class="cmd">[EventLoopTiming]</td><td class="desc">Add New EventLoopTiming — overrides how often a given event loop entry is evaluated.</td><td class="ex"><a href="#cfg-events">§3.8</a></td></tr>
+<tr><td class="cmd">[EventRegMatches]</td><td class="desc">Add New EventRegMatche — a regular expression matched against incoming chat to trigger an event.</td><td class="ex"><a href="#cfg-events">§3.8</a></td></tr>
+<tr><td class="cmd">[E3BotsPublishData]</td><td class="desc">Add New Key Value — arbitrary key/value pairs published to your bot network and readable from other toons' <code>${E3N.…}</code> queries.</td><td class="ex"><a href="#cfg-events">§3.8</a></td></tr>
 </tbody></table></div>
 
 <h3 id="cfg-window-editors">Editors, chosen by the shape of the key</h3>
@@ -1334,7 +1333,7 @@ Step 3 is not optional. Because substitution is plain text, an <b>unset</b> vari
 <tr><td class="cmd">Integer editor</td><td class="desc">Numeric keys such as percentages, distances and delays.</td><td class="ex">rejects non-numeric input; invalid values are logged as “Invalid Int32 value for […]”</td></tr>
 <tr><td class="cmd">String Editor</td><td class="desc">Everything else — names, channels, commands.</td><td class="ex">plain single-line field</td></tr>
 <tr><td class="cmd">RGBA Editor</td><td class="desc">Any key beginning <code>RGBA_</code> (HUD colours).</td><td class="ex">full ImGui colour picker; stored as four comma-separated floats 0–1</td></tr>
-<tr><td class="cmd">Spell Modifier Editor</td><td class="desc">The value parses as a spell/item/AA line — i.e. it can carry <code>/Modifier|Value</code> tags.</td><td class="ex">seven tabs, see <a href="#cfg-modifiers">§3.10</a></td></tr>
+<tr><td class="cmd">Spell Modifier Editor</td><td class="desc">The value parses as a spell/item/AA line — i.e. it can carry <code>/Modifier|Value</code> tags.</td><td class="ex">seven tabs, see <a href="#cfg-modifiers">§3.9</a></td></tr>
 <tr><td class="cmd">Manual Text Editor</td><td class="desc">Always available as the last tab — “Edit the raw configuration value directly. Changes apply when you click Apply.”</td><td class="ex">the escape hatch when a modifier has no UI field</td></tr>
 </tbody></table></div>
 
@@ -1354,7 +1353,7 @@ Step 3 is not optional. Because substitution is plain text, an <b>unset</b> vari
 <div class="tblwrap"><table>
 <thead><tr><th>Tool</th><th>Appears for</th><th>What it does</th></tr></thead>
 <tbody>
-<tr><td class="cmd">Spell Modifier Editor</td><td class="desc">Any spell-shaped value.</td><td class="ex">the seven-tab editor of <a href="#cfg-modifiers">§3.10</a></td></tr>
+<tr><td class="cmd">Spell Modifier Editor</td><td class="desc">Any spell-shaped value.</td><td class="ex">the seven-tab editor of <a href="#cfg-modifiers">§3.9</a></td></tr>
 <tr><td class="cmd">Memorized Spells</td><td class="desc">Always.</td><td class="ex">live grid of gems 1–12 with icons and levels, for the local toon or for a remote peer — the reference when you are assigning <code>/Gem|</code></td></tr>
 <tr><td class="cmd">Bard Tools → Open Melody Helper</td><td class="desc">Bards.</td><td class="ex">prompts for a melody name, a cast-ordered song list with gem assignments and an optional IF; then writes the <code>[&lt;name&gt; Melody]</code> section and the matching <code>[Ifs]</code> entry for you</td></tr>
 <tr><td class="cmd">Pick Toons</td><td class="desc"><code>Heals::Tank</code>, <code>Heals::Important Bot</code>.</td><td class="ex">lists connected bots (“N connected.” / “No connected toons detected.”) so tank and priority lists are filled from the real network</td></tr>
@@ -1628,70 +1627,8 @@ Step 3 is not optional. Because substitution is plain text, an <b>unset</b> vari
 
 <hr class="div">
 
-<section id="cfg-cure-tank">
-<h2><span class="num">3.7</span><span class="rb-text">Recipe — Auto-Curing Your Tank</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— worked example</small></h2>
-<p class="lede">The single most-asked question about <code>[Cures]</code>, answered end to end: how do I make my healer strip a debuff off my tank without me doing anything? Short version — <b>you configure it entirely on the healer</b>, but it will silently do nothing unless the tank is publishing its debuff data to your bot network.</p>
-
-<h3 id="cfg-cure-how">How E3 knows the tank is sick</h3>
-<p class="lede">EverQuest does not show you another player's debuffs. E3 works around that: every toon walks its own buff window each publish cycle, reads <code>${Me.Buff[N].CounterType}</code> and <code>${Me.Buff[N].CounterNumber}</code> for each slot, and broadcasts that payload to the network. Your healer then reads the tank's debuffs back off the bus rather than off the screen. That is why the tooltips repeat “must be part of your bot network” — outside it, there is nothing to read.</p>
-
-<div class="tblwrap"><table>
-<thead><tr><th>Where</th><th>What has to be true</th><th>Setting involved</th></tr></thead>
-<tbody>
-<tr><td class="cmd">On the <b>tank</b></td><td class="desc">E3 must be running and joined to the same bot network as the healer. Nothing goes in the tank's <code>[Cures]</code> section — it stays empty.</td><td class="ex">General Settings → NetworkMethod<br>(same EQBC server / NetMQ mesh)</td></tr>
-<tr><td class="cmd">On the <b>tank</b></td><td class="desc">Its buff data must actually be published. This is the one tank-side value that can break curing: if you raised it to save CPU, the healer is reacting to stale data and cures land late.</td><td class="ex">[CPU] PublishBuffDataInMS<br>default 1000 ms</td></tr>
-<tr><td class="cmd">On the <b>healer</b></td><td class="desc"><code>check_Cures</code> must appear in this class's routine list. If it is missing from the class section, <b>no</b> cure setting on this toon will ever fire.</td><td class="ex">Advanced Settings.ini → [CLR Functions] etc.</td></tr>
-<tr><td class="cmd">On the <b>healer</b></td><td class="desc">The cure spell must be castable — memmed in the gem you name, or reachable as an AA/item with the right <code>/CastType|</code>.</td><td class="ex">/Gem|12, /CastType|Item</td></tr>
-<tr><td class="cmd">Either side</td><td class="desc">Nothing needs to be triggered by hand. <code>[Cures]</code> is polled by the healer's main loop — there is no “ask for a cure” command the tank has to send.</td><td class="ex">—</td></tr>
-</tbody></table></div>
-
-<div class="note ok"><b>So: is anything needed on the tank's end?</b> Only that it is running E3, on the same network, and publishing buff data on a sane interval. The tank does not configure cures, does not request them, and does not need the <code>[Misc] Debuffs/Dots are visible</code> setting — that one governs <i>mob</i> debuff tracking, not group members.</div>
-
-<h3 id="cfg-cure-pick">Pick your tier — most specific wins</h3>
-<p class="lede">The four keys are tried in a fixed priority order, so you can layer them: a precise rule for the debuff that actually kills you, and a broad safety net underneath.</p>
-<div class="tblwrap"><table>
-<thead><tr><th>Priority</th><th>Key</th><th>Use it when</th></tr></thead>
-<tbody>
-<tr><td class="cmd">1 — highest</td><td class="desc"><code>RadiantCure</code></td><td class="ex">A named AE debuff is hitting several people at once and you want the Radiant Cure AA spent on it. Needs <code>/MinSick|N</code>.</td></tr>
-<tr><td class="cmd">2</td><td class="desc"><code>Cure</code></td><td class="ex"><b>“Cure this specific debuff on this specific person.”</b> This is the tank recipe.</td></tr>
-<tr><td class="cmd">3</td><td class="desc"><code>CureAll</code></td><td class="ex">The same named debuff matters on anyone in the group, not just the tank.</td></tr>
-<tr><td class="cmd">4 — lowest</td><td class="desc"><code>CurseCounters</code> / <code>PoisonCounters</code> / <code>DiseaseCounters</code> / <code>CorruptedCounters</code></td><td class="ex">Catch-all safety net — cure anything at all carrying that counter type. Trim it with the matching <code>…Ignore</code> list.</td></tr>
-</tbody></table></div>
-
-<h3 id="cfg-cure-recipe">The recipe, for a tank named Mytankname</h3>
-<p class="lede">All of the following goes in the <b>healer's</b> INI, under <code>[Cures]</code>. Select the healer in <code>/e3config</code>, click <code>[Cures]</code> in the section tree, then <b>Add New Value</b> on the key you want.</p>
-<div class="tblwrap"><table>
-<thead><tr><th>Goal</th><th>Line to add</th><th>Reading it back</th></tr></thead>
-<tbody>
-<tr><td class="cmd">Cure one named debuff on the tank</td><td class="desc"><code>Cure=Remove Greater Curse/Mytankname/CheckFor|Feeblemind/Gem|12</code></td><td class="ex">Cast <b>Remove Greater Curse</b> — on <b>Mytankname</b> — but only when they actually have <b>Feeblemind</b> — from <b>gem 12</b>.</td></tr>
-<tr><td class="cmd">Cover several debuffs on the tank</td><td class="desc"><code>Cure=Remove Greater Curse/Mytankname/CheckFor|Feeblemind/Gem|12</code><br><code>Cure=Crusader's Touch/Mytankname/CheckFor|Ikaav's Venom/Gem|11</code></td><td class="ex">Repeat the key. Order is priority — put the fight-ending debuff first.</td></tr>
-<tr><td class="cmd">One cure covering many debuff names</td><td class="desc"><code>Cure=Remove Greater Curse/Mytankname/CheckFor|Feeblemind,Torment of Body/Gem|12</code></td><td class="ex"><code>/CheckFor|</code> is comma-separated — any one of them triggers the cast.</td></tr>
-<tr><td class="cmd">Only in the zone where it matters</td><td class="desc"><code>Cure=Remove Greater Curse/Mytankname/CheckFor|Fulmination/Gem|12/Zone|txevu</code></td><td class="ex">Keeps a dedicated gem free everywhere else.</td></tr>
-<tr><td class="cmd">Do not cure mid-heal</td><td class="desc"><code>Cure=Remove Greater Curse/Mytankname/CheckFor|Feeblemind/Gem|12/Ifs|TankIsSafe</code></td><td class="ex">Gate it behind an <code>[Ifs]</code> expression so a cure never pre-empts an emergency heal.</td></tr>
-<tr><td class="cmd">Safety net under all of it</td><td class="desc"><code>CurseCounters=Remove Greater Curse</code><br><code>CurseCountersIgnore=Aura of Destruction</code></td><td class="ex">Cure <i>any</i> curse counter on <i>anyone</i> in group, except the named exclusions.</td></tr>
-<tr><td class="cmd">Spend the AA on a group-wide AE</td><td class="desc"><code>RadiantCure=Fulmination/MinSick|3/Zone|txevu</code><br><code>RadiantCureSpells=Radiant Cure</code><br><code>AutoRadiant (On/Off)=On</code></td><td class="ex">Fire Radiant Cure once at least 3 people are carrying Fulmination.</td></tr>
-</tbody></table></div>
-
-<div class="note"><b>The target goes second, before any modifier.</b> An E3 line reads <code>SpellName/Target/Modifier|Value/…</code>. Leaving the target out is what turns a <code>Cure=</code> into a de-facto <code>CureAll=</code>, and is the usual reason a “tank cure” fires on the wrong person. The Tools pane's <b>Pick Toons</b> button fills the name in from your live network so you cannot typo it.</div>
-
-<h3 id="cfg-cure-check">Checking it works</h3>
-<div class="tblwrap"><table>
-<thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead>
-<tbody>
-<tr><td class="cmd">“&lt;name&gt; needs a cure! Casting &lt;spell&gt;”</td><td class="desc">It is working — this is the message the cure routine prints when it fires. A second form, “… because of &lt;type&gt; counters”, tells you the <b>catch-all</b> tier fired rather than your targeted rule.</td><td class="ex">nothing to do</td></tr>
-<tr><td class="cmd">Nothing ever happens</td><td class="desc"><code>check_Cures</code> missing from this class's list in Advanced Settings.</td><td class="ex">add it, then <code>/e3reload</code></td></tr>
-<tr><td class="cmd">Nothing happens for one toon only</td><td class="desc">That toon is not on the bot network, so its debuffs are never published.</td><td class="ex">check NetworkMethod matches; confirm it appears in <b>Pick Toons</b></td></tr>
-<tr><td class="cmd">Cures land seconds late</td><td class="desc"><code>PublishBuffDataInMS</code> raised on the <b>tank</b>.</td><td class="ex">lower it toward the 1000 ms default on tanks</td></tr>
-<tr><td class="cmd">Cure never lands despite the message</td><td class="desc">Spell is not in the gem you named, or an item/AA is missing <code>/CastType|</code>.</td><td class="ex">check the <b>Memorized Spells</b> grid in the Tools pane</td></tr>
-<tr><td class="cmd">Debuff name does not match</td><td class="desc"><code>/CheckFor|</code> is matched against the debuff's real spell name, not the emote text.</td><td class="ex">confirm with <code>/e3debug_check_buffs</code> on the tank</td></tr>
-<tr><td class="cmd">Two healers both burn Radiant Cure</td><td class="desc">Shouldn't happen — E3 sets the shared <code>/CastingRadiantCure</code> flag for 15 seconds so the rest of the group stands down.</td><td class="ex">if it does, both healers are on different networks</td></tr>
-</tbody></table></div>
-</section>
-
-<hr class="div">
-
 <section id="cfg-pets">
-<h2><span class="num">3.8</span><span class="rb-text">Pets, Charm, Gimme, Bando &amp; Manastone</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— character INI</small></h2>
+<h2><span class="num">3.7</span><span class="rb-text">Pets, Charm, Gimme, Bando &amp; Manastone</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— character INI</small></h2>
 
 <h3 id="cfg-pets-pets">[Pets]</h3>
 <div class="tblwrap"><table>
@@ -1775,7 +1712,7 @@ Step 3 is not optional. Because substitution is plain text, an <b>unset</b> vari
 <hr class="div">
 
 <section id="cfg-events">
-<h2><span class="num">3.9</span><span class="rb-text">Ifs, Events &amp; the Free-Form Sections</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— character INI</small></h2>
+<h2><span class="num">3.8</span><span class="rb-text">Ifs, Events &amp; the Free-Form Sections</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— character INI</small></h2>
 <p class="lede">These sections have no fixed key names — you invent them, which is why the config window gives each one an <b>Add New</b> button. Together they are E3's scripting layer.</p>
 
 <div class="tblwrap"><table>
@@ -1823,7 +1760,7 @@ That reads: target now, cast at 0.5s, retarget at 6.0s, cast again at 6.5s. <cod
 <hr class="div">
 
 <section id="cfg-modifiers">
-<h2><span class="num">3.10</span><span class="rb-text">The Spell Modifier Editor</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— every <code>/Tag|Value</code></small></h2>
+<h2><span class="num">3.9</span><span class="rb-text">The Spell Modifier Editor</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— every <code>/Tag|Value</code></small></h2>
 <p class="lede">Every spell, item, AA and ability entry in an E3 INI is one line: a name, an optional target, then any number of <code>/Modifier|Value</code> tags. The editor exposes them across seven tabs — <b>General, Conditions, Resources, Timing, Advanced, Flags, Manual Edit</b> — with a live <b>Preview</b> of the resulting line and Apply / Reset buttons. Everything below can also just be typed.</p>
 
 <h3 id="cfg-mod-general">General</h3>
@@ -1842,7 +1779,7 @@ That reads: target now, cast at 0.5s, retarget at 6.0s, cast again at 6.5s. <cod
 <div class="tblwrap"><table>
 <thead><tr><th>Modifier</th><th>What it does</th><th>Values</th></tr></thead>
 <tbody>
-<tr><td class="cmd">/Ifs|key,key</td><td class="desc">Comma-separated keys from your <code>[Ifs]</code> section, or from the shared <code>GlobalIfs.ini</code> when the character INI has no such name (<a href="#cfg-globalifs">§3.9</a>). <b>Every</b> referenced conditional must evaluate true before the entry can fire.</td><td class="ex">/Ifs|SafeToNuke,NotInDisc</td></tr>
+<tr><td class="cmd">/Ifs|key,key</td><td class="desc">Comma-separated keys from your <code>[Ifs]</code> section, or from the shared <code>GlobalIfs.ini</code> when the character INI has no such name (<a href="#cfg-globalifs">§3.8</a>). <b>Every</b> referenced conditional must evaluate true before the entry can fire.</td><td class="ex">/Ifs|SafeToNuke,NotInDisc</td></tr>
 <tr><td class="cmd">/CheckFor|name,name</td><td class="desc">Spell names to check first. On a detrimental entry it looks at the mob's debuffs; on a buff or song it checks the target's buff list. If any of them is already present, the cast is skipped.</td><td class="ex">/CheckFor|Cantata of Life</td></tr>
 <tr><td class="cmd">/CastIf|name</td><td class="desc">The inverse — only cast when the target <b>already has</b> this exact buff or debuff.</td><td class="ex">/CastIf|Malosinete</td></tr>
 <tr><td class="cmd">/Zone|short,short</td><td class="desc">Comma-separated EQ short zone names in which the entry is allowed. Blank means everywhere.</td><td class="ex">/Zone|txevu,unrest</td></tr>
@@ -1928,7 +1865,7 @@ That reads: target now, cast at 0.5s, retarget at 6.0s, cast again at 6.5s. <cod
 <hr class="div">
 
 <section id="cfg-general">
-<h2><span class="num">3.11</span><span class="rb-text">General Settings.ini</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— shared by every character</small></h2>
+<h2><span class="num">3.10</span><span class="rb-text">General Settings.ini</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— shared by every character</small></h2>
 <p class="lede">One file in <code>config\e3 Macro Inis\</code> that all your toons read. Select it from the same character dropdown. <code>/e3settings createdefault</code> writes a fresh annotated copy as <code>General Settings_default.ini</code> if you want a clean reference.</p>
 
 <h3 id="cfg-general-general">[General]</h3>
@@ -2036,7 +1973,7 @@ That reads: target now, cast at 0.5s, retarget at 6.0s, cast again at 6.5s. <cod
 <hr class="div">
 
 <section id="cfg-advanced">
-<h2><span class="num">3.12</span><span class="rb-text">Advanced Settings.ini</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— the class routine order</small></h2>
+<h2><span class="num">3.11</span><span class="rb-text">Advanced Settings.ini</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— the class routine order</small></h2>
 <p class="lede">One section per class, each holding an ordered list of routines. This file <b>is</b> E3's priority system: the order you list the checks is the order they get evaluated every pass of the main loop, so moving <code>check_Heals</code> above <code>check_Nukes</code> genuinely changes how a character plays. Sixteen sections, one per class, keyed <code>[XXX Functions]</code> with repeated <code>XXX Function=</code> entries.</p>
 
 <div class="tblwrap"><table>
@@ -2081,7 +2018,7 @@ That reads: target now, cast at 0.5s, retarget at 6.0s, cast again at 6.5s. <cod
 <hr class="div">
 
 <section id="cfg-ui">
-<h2><span class="num">3.13</span><span class="rb-text">The _UI.ini — Theme &amp; HUD</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— <code>&lt;Name&gt;_&lt;Server&gt;_UI.ini</code></small></h2>
+<h2><span class="num">3.12</span><span class="rb-text">The _UI.ini — Theme &amp; HUD</span> <small style="font:400 15px/1 sans-serif;color:var(--tx3)">— <code>&lt;Name&gt;_&lt;Server&gt;_UI.ini</code></small></h2>
 <p class="lede">A second per-character file sitting beside your bot INI, holding everything cosmetic: the config window's own theme, and every panel of the HUD hub that <code>/e3hud_hub</code> and <code>/e3hud_casting</code> draw.</p>
 
 <h3 id="cfg-ui-theme">[UI Theme]</h3>
@@ -2150,7 +2087,7 @@ That reads: target now, cast at 0.5s, retarget at 6.0s, cast again at 6.5s. <cod
 <tr><td class="cmd">E3.dll IL, read as logic<br><small style="color:var(--tx3)">§2.2 filter tokens</small></td><td class="desc">Where a feature leaves no help string at all, the same <code>ikdasm</code> disassembly was read as <i>behaviour</i> rather than mined for literals: following the control flow of a method to establish what it actually decides. The <code>/only|</code> · <code>/not|</code> · <code>/include|</code> · <code>/exclude|</code> filters came out this way, from <code>GetCommandFilters</code>, <code>FilterMe</code>, <code>FilterReturnCheck</code> and <code>CommandMatch::set_args</code>, with the class-group keywords cross-checked against the <code>E3Core.Data.Class</code> enum. Anything documented this route is <b>as-implemented, not as-intended</b>, and unlike the command lists it has not been confirmed by running it in game — worth knowing before you trust an edge case.</td><td class="ex">4 undocumented tokens, 9 group keywords</td></tr>
 <tr><td class="cmd">Plugin DLLs</td><td class="desc">Extracted ASCII and UTF-16 string tables from all 105 plugins plus <code>MQ2Main.dll</code>, filtered for command-shaped tokens, then cross-checked each against the plugin's own usage and syntax strings.</td><td class="ex">~200 plugin commands with real usage text</td></tr>
 <tr><td class="cmd">Lua &amp; macros</td><td class="desc">Grepped <code>lua\</code> for <code>mq.bind</code> and <code>Macros\</code> for <code>#bind</code>.</td><td class="ex">18 Lua binds, 7 macro binds</td></tr>
-<tr><td class="cmd">E3Next C# source<br><small style="color:var(--tx3)">§2.x E3 variables, §3.9 GlobalIfs</small></td><td class="desc">E3.dll's embedded PDB paths point at the project it was built from, so where that checkout is present the original source can be read directly instead of the IL. The <code>/e3var*</code> commands and the Ifs resolver were taken from <code>Processors\Casting.cs</code>, the global conditionals file from <code>Settings\FeatureSettings\GlobalIfs.cs</code>, and the character-INI fallback order from <code>Data\Spell.cs</code> and <code>Data\MelodyIfs.cs</code>. This is the most reliable source in the table — real names, comments and control flow — but it only describes <b>your</b> build, and a stock binary install will not have it.</td><td class="ex">Substitution order, lookup fallback, per-character variable scope</td></tr>
+<tr><td class="cmd">E3Next C# source<br><small style="color:var(--tx3)">§2.x E3 variables, §3.8 GlobalIfs</small></td><td class="desc">E3.dll's embedded PDB paths point at the project it was built from, so where that checkout is present the original source can be read directly instead of the IL. The <code>/e3var*</code> commands and the Ifs resolver were taken from <code>Processors\Casting.cs</code>, the global conditionals file from <code>Settings\FeatureSettings\GlobalIfs.cs</code>, and the character-INI fallback order from <code>Data\Spell.cs</code> and <code>Data\MelodyIfs.cs</code>. This is the most reliable source in the table — real names, comments and control flow — but it only describes <b>your</b> build, and a stock binary install will not have it.</td><td class="ex">Substitution order, lookup fallback, per-character variable scope</td></tr>
 <tr><td class="cmd">/e3config settings<br><small style="color:var(--tx3)">Part III</small></td><td class="desc">E3.dll turned out to carry its own help: a <code>ConfigKeyDescriptionsForImGUI</code> table mapping <code>Section::Key</code> to the tooltip the config window shows, colour markup and worked examples included. That was extracted verbatim, then joined against the settings loaders (<code>CharacterSettings.cs</code>, <code>GeneralSettings.cs</code>, <code>AdvancedSettings.cs</code>) for the keys with no tooltip, the modifier parser for every <code>/Tag|Value</code>, and <code>CharacterSettingsWindow.cs</code> for the window's own controls. Defaults, clamps and validation warnings come from the loaders; example values were cross-checked against the INI files on this install.</td><td class="ex">435 settings, controls and modifiers</td></tr>
 </tbody></table></div>
 <div class="note warn"><b>Two caveats worth knowing.</b> First, string extraction cannot always distinguish a command a plugin <i>registers</i> from one it merely <i>issues</i> — where a plugin's strings showed only generic commands like <code>/stand</code> or <code>/autoinventory</code>, those were treated as issued, not registered, and left out. Second, binary noise in large DLLs produces occasional false command-shaped tokens; entries that were plainly junk have been dropped. For E3 specifically there is no ambiguity — the registrations were read from IL, not guessed. Run <code>/e3listcommands</code> in game to confirm against your exact build.</div>
